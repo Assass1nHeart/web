@@ -1,0 +1,42 @@
+.MainBudy {
+  width: 500px;
+  padding: 20px;
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.text {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
+
+.input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #4d90fe;
+}
+
+select {
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+select:focus {
+  outline: none;
+  border-color: #4d90fe;
+}
