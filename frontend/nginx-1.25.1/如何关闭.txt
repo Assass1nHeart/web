@@ -1,0 +1,2 @@
+#在当前文件夹的cmd运行：
+./nginx -s stop

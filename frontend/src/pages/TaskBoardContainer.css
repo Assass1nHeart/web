@@ -41,10 +41,10 @@
 
 .container {
   display: flex;
-  justify-content: space-around;
   align-items: flex-start;
-  width: 90%;
+  width: 100%;
   margin: 20px 0;
+  flex-wrap: wrap; /* Allow columns to wrap if needed */
 }
 
 .mainColumn {
@@ -54,6 +54,7 @@
   width: 30%;
   margin: 10px;
   padding: 10px;
+  box-sizing: border-box;
 }
 
 .columnTitle {
@@ -128,4 +129,60 @@
   border: 2px dashed #ff5722;
   border-radius: 5px;
   min-height: 50px;
+}
+
+.subcolumn {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.subcolumnTitle {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.subcolumnContent {
+  background-color: #f8f9fa;
+  padding: 8px;
+  border-radius: 4px;
+  min-height: 50px;
+}
+
+.subcolumnContentActive {
+  background-color: #e2e6ea;
+  padding: 8px;
+  border-radius: 4px;
+  min-height: 50px;
+}
+
+.subcolumn.todo {
+  background-color: #e7f3fe;
+  border-left: 4px solid #1e90ff;
+}
+
+.subcolumn.doing {
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+}
+
+.subcolumn.done {
+  background-color: #d4edda;
+  border-left: 4px solid #28a745;
+}
+
+.issue {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.issueDragging {
+  background-color: #f1f3f5;
+  border: 1px dashed #dee2e6;
 }

@@ -20,9 +20,11 @@ const TaskBoardContainer = () => {
     axios.get('/taskboard/get/')
       .then(response => {
         setData(response.data);
+        setStatus('home');
       })
       .catch(error => {
         console.log(error);
+        setStatus('home');
       });
     axios.get('/taskboard/getinfo/')
       .then(response => {
@@ -33,15 +35,6 @@ const TaskBoardContainer = () => {
         console.log(error);
       });
   }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setStatus('home'), 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (status === 'loading') {
-    return <LoadingIndicator />;
-  }
 
   const saveData = () => {
     axios.post('/taskboard/save', { data })
@@ -58,26 +51,32 @@ const TaskBoardContainer = () => {
   const addColumn = () => {
     const newColumn = {
       id: data.length,
-      name: 'new column',
-      issues: [
-        { id: 'todo', name: 'to do', issues: [] },
-        { id: 'doing', name: 'doing', issues: [] },
-        { id: 'done', name: 'done', issues: [] },
-      ],
+      name: '新项目',
+      subColumns: [
+        { id: 1, name: 'to do', issues: [] },
+        { id: 2, name: 'doing', issues: [] },
+        { id: 3, name: 'done', issues: [] }
+      ]
     };
     setData(prevData => [...prevData, newColumn]);
   };
 
-  const addIssue = (columnIndex, subColumnIndex) => {
+  const addIssue = (columnIndex, subColumnId) => {
     const newIssue = {
-      id: Date.now(),
+      id: Date.now(), // Unique ID for new issue
       name: '新任务',
       comments: [],
       urls: [],
       content: '新任务',
     };
     const updatedData = update(data, {
-      [columnIndex]: { issues: { [subColumnIndex]: { issues: { $push: [newIssue] } } } },
+      [columnIndex]: {
+        subColumns: {
+          [data[columnIndex].subColumns.findIndex(sub => sub.id === subColumnId)]: {
+            issues: { $push: [newIssue] }
+          }
+        }
+      }
     });
     setData(updatedData);
   };
@@ -86,49 +85,58 @@ const TaskBoardContainer = () => {
     const { source, destination } = result;
     if (!destination) return;
 
-    const fromColIndex = parseInt(source.droppableId.split('-')[0], 10);
-    const fromSubColIndex = parseInt(source.droppableId.split('-')[1], 10);
+    const [fromColIndex, fromSubColId] = source.droppableId.split('-').map(Number);
     const fromIssueIndex = source.index;
-    const toColIndex = parseInt(destination.droppableId.split('-')[0], 10);
-    const toSubColIndex = parseInt(destination.droppableId.split('-')[1], 10);
+    const [toColIndex, toSubColId] = destination.droppableId.split('-').map(Number);
+    const toIssueIndex = destination.index;
 
-    const movedIssue = data[fromColIndex].issues[fromSubColIndex].issues[fromIssueIndex];
+    if (isNaN(fromColIndex) || isNaN(toColIndex)) return;
+
+    const movedIssue = data[fromColIndex].subColumns.find(sub => sub.id === fromSubColId).issues[fromIssueIndex];
     let tempData = update(data, {
-      [fromColIndex]: { issues: { [fromSubColIndex]: { issues: { $splice: [[fromIssueIndex, 1]] } } } },
+      [fromColIndex]: {
+        subColumns: {
+          [data[fromColIndex].subColumns.findIndex(sub => sub.id === fromSubColId)]: {
+            issues: { $splice: [[fromIssueIndex, 1]] }
+          }
+        }
+      }
     });
 
-    if (destination.droppableId === 'dustbin') {
+    if (toColIndex === 99) {
       // 删除任务
       console.log('任务被拖入垃圾箱:', movedIssue);
       setData(tempData);
       return;
     }
 
-    const toIssueIndex = destination.index;
     tempData = update(tempData, {
-      [toColIndex]: { issues: { [toSubColIndex]: { issues: { $splice: [[toIssueIndex, 0, movedIssue]] } } } },
+      [toColIndex]: {
+        subColumns: {
+          [tempData[toColIndex].subColumns.findIndex(sub => sub.id === toSubColId)]: {
+            issues: { $splice: [[toIssueIndex, 0, movedIssue]] }
+          }
+        }
+      }
     });
 
     setData(tempData);
   };
 
-  const Column = ({ columnIndex, column }) => (
-    <div className="mainColumn">
-      <div className="columnTitle" onDoubleClick={() => setSelectedColumn(columnIndex)}>
-        {column.name}({column.issues.reduce((acc, subCol) => acc + subCol.issues.length, 0)})
-      </div>
-      <div className="subColumns">
-        {column.issues.map((subColumn, subIndex) => (
-          <Droppable droppableId={`${columnIndex}-${subIndex}`} key={`${columnIndex}-${subIndex}`}>
+  const Column = ({ columnIndex, column }) => {
+    return (
+      <div className="mainColumn" onDoubleClick={() => setSelectedColumn(columnIndex)}>
+        <div className="columnTitle">{column.name}</div>
+        {column.subColumns && column.subColumns.map(subColumn => (
+          <Droppable key={subColumn.id} droppableId={`${columnIndex}-${subColumn.id}`}>
             {(provided, snapshot) => (
               <div
                 ref={provided.innerRef}
-                className={snapshot.isDraggingOver ? 'subColumnContentActive' : 'subColumnContent'}
                 {...provided.droppableProps}
-                onDoubleClick={() => addIssue(columnIndex, subIndex)}
+                className={snapshot.isDraggingOver ? 'subColumnContentActive' : 'subColumnContent'}
               >
                 <div className="subColumnTitle">{subColumn.name}</div>
-                {subColumn.issues.map((issue, index) => (
+                {subColumn.issues && subColumn.issues.map((issue, index) => (
                   <Draggable key={issue.id} draggableId={`${issue.id}`} index={index}>
                     {(provided, snapshot) => (
                       <div
@@ -136,7 +144,7 @@ const TaskBoardContainer = () => {
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
                         className={snapshot.isDragging ? 'issueDragging' : 'issue'}
-                        onClick={() => setActiveIssue({ columnId: columnIndex, subColumnId: subIndex, issueId: index })}
+                        onClick={() => setActiveIssue({ columnId: columnIndex, issueId: index, subColumnId: subColumn.id })}
                       >
                         {issue.name}
                       </div>
@@ -144,13 +152,17 @@ const TaskBoardContainer = () => {
                   </Draggable>
                 ))}
                 {provided.placeholder}
+                {/* Only show "Add Task" button for "to do" sub-column */}
+                {subColumn.name === 'to do' && (
+                  <button onClick={() => addIssue(columnIndex, subColumn.id)}>添加任务</button>
+                )}
               </div>
             )}
           </Droppable>
         ))}
       </div>
-    </div>
-  );
+    );
+  };
 
   const deleteColumn = (confirmDelete) => {
     if (confirmDelete) {
@@ -159,6 +171,24 @@ const TaskBoardContainer = () => {
     setSelectedColumn(null);
   };
 
+  const Dustbin = () => (
+    <div className="dustbinContainer">
+      <div className="columnTitle">垃圾箱</div>
+      <Droppable droppableId="99">
+        {(provided, snapshot) => (
+          <div
+            ref={provided.innerRef}
+            className={snapshot.isDraggingOver ? 'dustbinContentActive' : 'dustbinContent'}
+            {...provided.droppableProps}
+          >
+            {provided.placeholder}
+            {!snapshot.isDraggingOver ? '请放入废弃任务' : '确认回收任务?'}
+          </div>
+        )}
+      </Droppable>
+    </div>
+  );
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="MainBody">
@@ -166,12 +196,8 @@ const TaskBoardContainer = () => {
           Task Board Total Columns: {data.length}
           <div className="headerTitle">
             from &ensp; {username} &ensp; id: {userId}
-            <button className="button" onClick={addColumn}>
-              Adding Column
-            </button>
-            <button className="button" onClick={saveData}>
-              Saving Data
-            </button>
+            <button className="button addColumnButton" onClick={addColumn}>添加项目</button>
+            <button className="button saveDataButton" onClick={saveData}>保存数据</button>
           </div>
         </div>
         <div className="container">
@@ -203,21 +229,7 @@ const TaskBoardContainer = () => {
               deleteColumn={deleteColumn}
             />
           )}
-        </div>
-        <div className="dustbinContainer">
-          <div className="columnTitle">垃圾箱</div>
-          <Droppable droppableId="dustbin">
-            {(provided, snapshot) => (
-              <div
-                ref={provided.innerRef}
-                className={snapshot.isDraggingOver ? 'dustbinContentActive' : 'dustbinContent'}
-                {...provided.droppableProps}
-              >
-                {provided.placeholder}
-                {!snapshot.isDraggingOver ? '请放入废弃任务' : '确认回收任务?'}
-              </div>
-            )}
-          </Droppable>
+          <Dustbin />
         </div>
       </div>
     </DragDropContext>

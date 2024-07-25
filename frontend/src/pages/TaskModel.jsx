@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Modal, Upload, Button, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import update from 'immutability-helper';
-import axios from 'axios';
 
 const TaskModel = ({ columnId, subColumnId, issueId, data, onOk, onCancel, visible, changeData }) => {
   const [taskData, setTaskData] = useState(data);
@@ -18,8 +17,8 @@ const TaskModel = ({ columnId, subColumnId, issueId, data, onOk, onCancel, visib
       setTaskData((prevData) => {
         const updatedData = update(prevData, {
           [columnId]: {
-            issues: {
-              [subColumnId]: {
+            subColumns: {
+              [prevData[columnId].subColumns.findIndex(sub => sub.id === subColumnId)]: {
                 issues: {
                   [issueId]: {
                     urls: { $push: [`http://127.0.0.1:8080/upload/${info.file.name}`] },
@@ -42,8 +41,8 @@ const TaskModel = ({ columnId, subColumnId, issueId, data, onOk, onCancel, visib
       setTaskData((prevData) => {
         const updatedData = update(prevData, {
           [columnId]: {
-            issues: {
-              [subColumnId]: {
+            subColumns: {
+              [prevData[columnId].subColumns.findIndex(sub => sub.id === subColumnId)]: {
                 issues: {
                   [issueId]: {
                     name: { $set: newName },
@@ -64,8 +63,8 @@ const TaskModel = ({ columnId, subColumnId, issueId, data, onOk, onCancel, visib
       setTaskData((prevData) => {
         const updatedData = update(prevData, {
           [columnId]: {
-            issues: {
-              [subColumnId]: {
+            subColumns: {
+              [prevData[columnId].subColumns.findIndex(sub => sub.id === subColumnId)]: {
                 issues: {
                   [issueId]: {
                     content: { $set: newContent },
@@ -87,8 +86,8 @@ const TaskModel = ({ columnId, subColumnId, issueId, data, onOk, onCancel, visib
       setTaskData((prevData) => {
         const updatedData = update(prevData, {
           [columnId]: {
-            issues: {
-              [subColumnId]: {
+            subColumns: {
+              [prevData[columnId].subColumns.findIndex(sub => sub.id === subColumnId)]: {
                 issues: {
                   [issueId]: {
                     comments: { $push: [newComment] },
@@ -104,7 +103,8 @@ const TaskModel = ({ columnId, subColumnId, issueId, data, onOk, onCancel, visib
     }
   };
 
-  const currentIssue = taskData[columnId]?.issues[subColumnId]?.issues[issueId];
+  // Ensure correct access to issues
+  const currentIssue = taskData[columnId]?.subColumns?.find(sub => sub.id === subColumnId)?.issues?.[issueId];
 
   return (
     <Modal
@@ -117,7 +117,7 @@ const TaskModel = ({ columnId, subColumnId, issueId, data, onOk, onCancel, visib
       {currentIssue ? (
         <div>
           <div>
-            <span>项目名称: {taskData[columnId].name}</span>
+            <span>项目名称: {taskData[columnId]?.name || '无名'}</span>
           </div>
           <div>
             <span>任务名称:</span>
@@ -138,7 +138,7 @@ const TaskModel = ({ columnId, subColumnId, issueId, data, onOk, onCancel, visib
           <div>
             <span>评论:</span>
             <ul>
-              {currentIssue.comments.map((comment, index) => (
+              {currentIssue.comments?.map((comment, index) => (
                 <li key={index}>第 {index + 1} 个: {comment}</li>
               ))}
             </ul>
@@ -150,7 +150,7 @@ const TaskModel = ({ columnId, subColumnId, issueId, data, onOk, onCancel, visib
           <div>
             <span>附加文件:</span>
             <ul>
-              {currentIssue.urls.map((url, index) => (
+              {currentIssue.urls?.map((url, index) => (
                 <li key={index}>
                   <a href={url} download={url}>第 {index + 1} 个: {url.split('/').pop()}</a>
                 </li>

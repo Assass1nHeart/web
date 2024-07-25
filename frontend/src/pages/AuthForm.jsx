@@ -20,7 +20,7 @@ const AuthForm = () => {
       switch (status) {
         case 'success':
           alert('Login successful!');
-          navigate('/home/');
+          navigate('/home');
           break;
         case 'password error':
           alert('Incorrect password');
