@@ -14,6 +14,9 @@ from path import Path
 
 
 app = FastAPI()
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to FastAPI"}
 
 app.include_router(Taskboard, prefix="/taskboard",tags=["taskboard"])
 app.include_router(User, prefix="/user",tags=["user"])
