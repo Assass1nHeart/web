@@ -4,7 +4,6 @@ on: [push, pull_request]
 
 jobs:
   build-and-test:
-
     runs-on: ubuntu-latest
 
     services:
@@ -30,7 +29,10 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '16'
+        node-version: '20'
+
+    - name: Check Node.js version
+      run: node -v
 
     - name: Install frontend dependencies
       working-directory: frontend
@@ -48,13 +50,14 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.9'
+        python-version: '3.7'
 
     - name: Install backend dependencies
       working-directory: backend
       run: |
         python -m venv venv
         source venv/bin/activate
+        pip install --upgrade pip
         pip install -r requirements.txt
 
     - name: Run backend tests
@@ -67,7 +70,5 @@ jobs:
       working-directory: backend
       run: |
         source venv/bin/activate
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        uvicorn main:app --host 0.0.0.0 --port 8080 &
         sleep 5  # give the server time to start
-
-    # Additional step to run end-to-end tests can be added here if needed
